@@ -65,11 +65,6 @@ namespace Utils {
            (((int64_t)surface)    << 24) ;
   }
 
-  inline std::string int_to_string(int a)
-  {
-    return static_cast< std::ostringstream & >(( std::ostringstream() << std::dec << a ) ).str();
-  }
-
   inline std::string double_to_string(double dbl)
   {
     std::ostringstream strs;
