@@ -234,7 +234,7 @@ void FixMagnetic::post_force(int vflag)
       i = ilist[ii];
 
       if (mask[i] & groupbit) {
-        double C = u*(20000-1)*rad[i]*rad[i]*rad[i]*p4/(20000+2);
+        double C = (20000-1)*rad[i]*rad[i]*rad[i]*p4/(20000+2)/u;
         mu[i][0] = C*ex;
         mu[i][1] = C*ey;
         mu[i][2] = C*ez;        
