@@ -201,7 +201,7 @@ void FixMagnetic::setup(int vflag)
 void FixMagnetic::post_force(int vflag)
 {
   //std::cout<<"made it this far";
-  int i,j,k,ii,jj,inum,jnum;
+  int i,j,ii,jj,inum,jnum;
   int *ilist,*jlist,*numneigh,**firstneigh,*slist;
   double dx, dy, dz, fx, fy, fz, rsq, r, mir, mjr, mumu, A, K, muR;
   double *rad = atom->radius;
@@ -211,7 +211,6 @@ void FixMagnetic::post_force(int vflag)
   double *q = atom->q;
   double p4 = M_PI*4;
   double u = p4*1e-7;
-  double C = 3*(20000-1)*.0002*.0002*.0002*p4/3/(20000+2);
   //std::cout<<"C = "<<C<<"\n";
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
@@ -229,26 +228,20 @@ void FixMagnetic::post_force(int vflag)
   numneigh = list->numneigh;
   firstneigh = list->firstneigh;
   // std::cout<<ex<<","<<ey<<","<<ez;
-  double muc[inum][3];
+
   if (varflag == CONSTANT) {
-    for (k = 0; k < inum; k++) {
-    	  if (mask[k] & groupbit) {
-    	    muc[k][0] = mu[k][0];
-    	    muc[k][1] = mu[k][1];
-    	    muc[k][2] = mu[k][2];
-    	    C = 3*(20000-1)*rad[i]*rad[i]*rad[i]*p4/3/(20000+2);
-    	    mu[k][0] = C*ex/u;
-    	    mu[k][1] = C*ey/u;
-    	    mu[k][2] = C*ez/u;
-    	  }
-    }
     for (ii = 0; ii < inum; ii++) {
       i = ilist[ii];
+
       if (mask[i] & groupbit) {
+        double C = u*(20000-1)*rad[i]*rad[i]*rad[i]*p4/(20000+2);
+        mu[i][0] = C*ex;
+        mu[i][1] = C*ey;
+        mu[i][2] = C*ez;        
         jlist = firstneigh[i];
         jnum = numneigh[i];
-        for (jj = 0; jj<jnum; jj++)  {
 
+        for (jj = 0; jj<jnum; jj++)  {          
           j =jlist[jj];
           j &= NEIGHMASK;
           dx = x[i][0] - x[j][0];
@@ -256,31 +249,27 @@ void FixMagnetic::post_force(int vflag)
           dz = x[i][2] - x[j][2];
           rsq = dx*dx + dy*dy + dz*dz;
           r = sqrt(rsq);
-          A = C/p4/r/rsq;
+          A = C*u/p4/r/rsq;
           dx /= r;
           dy /= r;
           dz /= r;
           
           //std::cout<<i<<j<<"rh = "<<dx<<","<<dy<<","<<dz;
           
-          mjr = muc[j][0]*dx+muc[j][1]*dy+muc[j][2]*dz;
-          mir = muc[i][0]*dx+muc[i][1]*dy+muc[i][2]*dz;
+          mjr = mu[j][0]*dx+mu[j][1]*dy+mu[j][2]*dz;
           //std::cout<<"mjdotr = "<<mjr;
           //std::cout<<"mu = "<<mu[i][0]<<","<<mu[i][1]<<","<<mu[i][2];
           
-          mu[i][0] += A*(3*mjr*dx-muc[j][0]);
-          mu[i][1] += A*(3*mjr*dy-muc[j][1]);
-          mu[i][2] += A*(3*mjr*dz-muc[j][2]);
-          mu[j][0] += A*(3*mir*dx-muc[i][0]);
-          mu[j][1] += A*(3*mir*dy-muc[i][1]);
-          mu[j][2] += A*(3*mir*dz-muc[i][2]);
-          
+          mu[i][0] += A*(3*mjr*dx-mu[j][0]);
+          mu[i][1] += A*(3*mjr*dy-mu[j][1]);
+          mu[i][2] += A*(3*mjr*dz-mu[j][2]);
           //std::cout<<i<<j<<"mu = "<<mu[i][0]<<","<<mu[i][1]<<","<<mu[i][ 2]<<"\n";
         }
 
         mumu = mu[i][0]*mu[i][0]+mu[i][1]*mu[i][1]+mu[i][2]*mu[i][2];
-        if (mumu > C*C*4/u/u){
-        	muR=sqrt(C*C*4/u/u/mumu);
+
+        if (mumu > C*C*4){
+        	muR=sqrt(C*C*4/mumu);
         	mu[i][0]=mu[i][0]*muR;
         	mu[i][1]=mu[i][1]*muR;
         	mu[i][2]=mu[i][2]*muR;
@@ -291,9 +280,11 @@ void FixMagnetic::post_force(int vflag)
 
       for (ii = 0; ii < inum; ii++) {
         i = ilist[ii];
+
         if (mask[i] & groupbit) {
           jlist = firstneigh[i];
           jnum = numneigh[i];
+
           for (jj = 0; jj<jnum; jj++)  {
 
             j =jlist[jj];
